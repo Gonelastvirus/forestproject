@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForestFire Sentinel - Dashboard</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body {
+            background-color: #edf3f9; /* clean bluish-white */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            color: #212529;
+        }
+
+        h1 {
+         /*   font-weight: 600;
+            margin-bottom: 30px; */
+            font-weight: 600;
+            margin-bottom: 45px;
+            margin-top: 45px;
+        }
+
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            border: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+        }
+
+        .card-header {
+            background-color: #2f3e46;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .alert-box {
+            margin-top: 20px;
+        }
+
+        .alert-danger {
+            background-color: #ff4d4f;
+            border: none;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        #tempValue,
+        #smokeValue,
+        #flameValue,
+        #humidityValue {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+/* Navbar custom styles */
+.navbar {
+            background-color: #2f3e46;
+        }
+
+        .navbar-brand,
+        .nav-link {
+            color: #ffffff !important;
+        }
+
+        .nav-link:hover {
+            color: #edf3f9 !important;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .navbar-toggler {
+            border-color: #ffffff;
+        }
+        html {
+    scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+
+
+        <h1 class="text-center">ForestFire Sentinel - Live Dashboard</h1>
+        <!-- Live Sensor Data Panel -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        Temperature
+                    </div>
+                    <div class="card-body">
+                        <h5 id="tempValue">N/A</h5>
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        Smoke Level
+                    </div>
+                    <div class="card-body">
+                        <h5 id="smokeValue">N/A</h5>
+                        <canvas id="smokeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        Flame Detection
+                    </div>
+                    <div class="card-body">
+                        <h5 id="flameValue">N/A</h5>
+                        <canvas id="flameChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        Humidity
+                    </div>
+                    <div class="card-body">
+                        <h5 id="humidityValue">N/A</h5>
+                        <canvas id="humidityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts and Logs Section -->
+        <div class="alert-box" id="alertBox">
+            <div class="alert alert-danger" role="alert">
+                <strong>Critical Alert!</strong> Flame detection triggered.
+            </div>
+        </div>
+
+        <!-- Daily Summary -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        Today's Summary
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>Avg Temperature: 53°C</li>
+                            <li>Avg Smoke: 0.85 ppm</li>
+                            <li>Avg Humidity: 14%</li>
+                            <li>Max Flame Detected: 1</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        Alerts History
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>12:05 PM - Flame Detected</li>
+                            <li>11:30 AM - High Temperature</li>
+                            <li>11:00 AM - Smoke Detected</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Add this inside your <body> where you want the map -->
+       <div class="card">
+        <div class="card-header">
+           Sensor Map
+        </div>
+       <div class="card-body">
+        <div id="map" style="height: 400px;"></div>
+       </div>
+      </div>
+
+    </div>
+   
+    
+    <!-- Chart Logic -->
+    <script>
+        
+          // Initialize charts
+          const tempChart = new Chart(document.getElementById('tempChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],
+                    borderColor: '#ff5733',
+                    backgroundColor: 'rgba(255, 87, 51, 0.3)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'category',
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        },
+                        min: 0,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        const smokeChart = new Chart(document.getElementById('smokeChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Smoke Level (ppm)',
+                    data: [],
+                    borderColor: '#33ff57',
+                    backgroundColor: 'rgba(51, 255, 87, 0.3)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'category',
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Smoke Level (ppm)'
+                        },
+                        min: 0,
+                        max: 10
+                    }
+                }
+            }
+        });
+
+        const flameChart = new Chart(document.getElementById('flameChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Flame Detected',
+                    data: [],
+                    borderColor: '#3399ff',
+                    backgroundColor: 'rgba(51, 153, 255, 0.3)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'category',
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Flame Detection (0/1)'
+                        },
+                        min: 0,
+                        max: 1
+                    }
+                }
+            }
+        });
+
+        const humidityChart = new Chart(document.getElementById('humidityChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Humidity (%)',
+                    data: [],
+                    borderColor: '#ff33b3',
+                    backgroundColor: 'rgba(255, 51, 179, 0.3)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'category',
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Humidity (%)'
+                        },
+                        min: 0,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        let map = L.map('map').setView([27.7, 85.3], 8);  // Default to Nepal
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker;
+
+        // Periodic function to update data
+        let lastTimestamp = null;  // Store the last received timestamp
+
+setInterval(() => {
+    const token = "{{ user.token }}";
+    console.log(token)
+    fetch(`http://127.0.0.1:8000/api/latest-sensor-data/?token=${token}`)
+        .then(res => {
+            if (!res.ok) throw new Error("Network response was not ok");
+            return res.json();
+        })
+        .then(data => {
+            // Only proceed if the timestamp has changed
+            if (data.timestamp !== lastTimestamp) {
+                lastTimestamp = data.timestamp;
+
+                const timeLabel = new Date().toLocaleTimeString();  // Label with current time
+
+                // Update chart data
+                tempChart.data.labels.push(timeLabel);
+                smokeChart.data.labels.push(timeLabel);
+                flameChart.data.labels.push(timeLabel);
+                humidityChart.data.labels.push(timeLabel);
+
+                tempChart.data.datasets[0].data.push(data.temperature);
+                smokeChart.data.datasets[0].data.push(data.smoke);
+                flameChart.data.datasets[0].data.push(data.flame);
+                humidityChart.data.datasets[0].data.push(data.humidity);
+
+                // Keep chart data to last 7 entries
+                const charts = [tempChart, smokeChart, flameChart, humidityChart];
+                charts.forEach(chart => {
+                    if (chart.data.labels.length > 7) {
+                        chart.data.labels.shift();
+                        chart.data.datasets[0].data.shift();
+                    }
+                    chart.update();
+                });
+
+                // Update value display
+                document.getElementById('tempValue').innerText = `${data.temperature} °C`;
+                document.getElementById('smokeValue').innerText = `${data.smoke} ppm`;
+                document.getElementById('flameValue').innerText = data.flame == 1 ? '🔥 Detected' : '✅ No Flame';
+                document.getElementById('humidityValue').innerText = `${data.humidity} %`;
+
+                // Flame alert + map marker
+                const alertBox = document.getElementById('alertBox');
+                if (data.flame) {
+                    if (marker) map.removeLayer(marker);
+                    marker = L.marker([data.latitude, data.longitude]).addTo(map)
+                        .bindPopup("🔥 Flame Detected Here!").openPopup();
+                    map.setView([data.latitude, data.longitude], 13);
+                    alertBox.innerHTML = `
+                        <div class="alert alert-danger" role="alert">
+                            <strong>🔥 Critical Alert!</strong> Flame detected at ${timeLabel}.
+                        </div>`;
+                } else {
+                    alertBox.innerHTML = '';
+                    if (marker) map.removeLayer(marker);
+                    marker = L.marker([27.700769, 85.300140]).addTo(map)
+                        .bindPopup("Safe Zone").openPopup();
+                    map.setView([27.700769, 85.300140], 13);
+                }
+            } else {
+                console.log("No new sensor data. Skipping update.");
+            }
+        })
+        .catch(err => console.error('Error fetching sensor data:', err));
+}, 2000);  // Fetch every 2 seconds
+  // Update every 2 seconds
+    </script>
+</body>
+</html>
+{% endblock %}
