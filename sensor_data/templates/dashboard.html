@@ -1,3 +1,4 @@
+<!-- templates/dashboard.html -->
 {% extends "base.html" %}
 {% block content %}
 <!DOCTYPE html>
@@ -9,7 +10,7 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body {
             background-color: #edf3f9; /* clean bluish-white */
@@ -19,8 +20,6 @@
         }
 
         h1 {
-         /*   font-weight: 600;
-            margin-bottom: 30px; */
             font-weight: 600;
             margin-bottom: 45px;
             margin-top: 45px;
@@ -65,8 +64,7 @@
             margin-bottom: 10px;
         }
 
-/* Navbar custom styles */
-.navbar {
+        .navbar {
             background-color: #2f3e46;
         }
 
@@ -84,342 +82,421 @@
         .navbar-toggler {
             border-color: #ffffff;
         }
+
         html {
-    scroll-behavior: smooth;
+            scroll-behavior: smooth;
         }
     </style>
 </head>
 <body>
+    <h1 class="text-center">ForestFire Sentinel - Live Dashboard</h1>
 
-
-        <h1 class="text-center">ForestFire Sentinel - Live Dashboard</h1>
-        <!-- Live Sensor Data Panel -->
-        <div class="row">
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">
-                        Temperature
-                    </div>
-                    <div class="card-body">
-                        <h5 id="tempValue">N/A</h5>
-                        <canvas id="tempChart"></canvas>
-                    </div>
+    <!-- Live Sensor Data Panel -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    Temperature
                 </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">
-                        Smoke Level
-                    </div>
-                    <div class="card-body">
-                        <h5 id="smokeValue">N/A</h5>
-                        <canvas id="smokeChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">
-                        Flame Detection
-                    </div>
-                    <div class="card-body">
-                        <h5 id="flameValue">N/A</h5>
-                        <canvas id="flameChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">
-                        Humidity
-                    </div>
-                    <div class="card-body">
-                        <h5 id="humidityValue">N/A</h5>
-                        <canvas id="humidityChart"></canvas>
-                    </div>
+                <div class="card-body">
+                   
+                    <canvas id="tempChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Alerts and Logs Section -->
-        <div class="alert-box" id="alertBox">
-            <div class="alert alert-danger" role="alert">
-                <strong>Critical Alert!</strong> Flame detection triggered.
-            </div>
-        </div>
-
-        <!-- Daily Summary -->
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        Today's Summary
-                    </div>
-                    <div class="card-body">
-                        <ul>
-                            <li>Avg Temperature: 53°C</li>
-                            <li>Avg Smoke: 0.85 ppm</li>
-                            <li>Avg Humidity: 14%</li>
-                            <li>Max Flame Detected: 1</li>
-                        </ul>
-                    </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    Smoke Level
                 </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        Alerts History
-                    </div>
-                    <div class="card-body">
-                        <ul>
-                            <li>12:05 PM - Flame Detected</li>
-                            <li>11:30 AM - High Temperature</li>
-                            <li>11:00 AM - Smoke Detected</li>
-                        </ul>
-                    </div>
+                <div class="card-body">
+                    
+                    <canvas id="smokeChart"></canvas>
                 </div>
             </div>
         </div>
-        <!-- Add this inside your <body> where you want the map -->
-       <div class="card">
-        <div class="card-header">
-           Sensor Map
-        </div>
-       <div class="card-body">
-        <div id="map" style="height: 400px;"></div>
-       </div>
-      </div>
 
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    Flame Detection
+                </div>
+                <div class="card-body">
+                   
+                    <canvas id="flameChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    Humidity
+                </div>
+                <div class="card-body">
+                   
+                    <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
-   
-    
-    <!-- Chart Logic -->
-    <script>
-        
-          // Initialize charts
-          const tempChart = new Chart(document.getElementById('tempChart'), {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Temperature (°C)',
-                    data: [],
-                    borderColor: '#ff5733',
-                    backgroundColor: 'rgba(255, 87, 51, 0.3)',
-                    fill: true,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        type: 'category',
-                        title: {
-                            display: true,
-                            text: 'Time'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Temperature (°C)'
-                        },
-                        min: 0,
-                        max: 100
-                    }
-                }
+
+   <!-- Alerts and Logs Section -->
+<div class="alert-box" id="alertBox">
+    <div id="flameAlert" class="alert alert-danger" role="alert" style="display: none;">
+        <strong>🔥 Critical Alert!</strong> Flame detected at Node <span id="flameNode">N/A</span> at <span id="flameTime">N/A</span>.
+    </div>
+</div>
+
+    <!-- Daily Summary -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Today's Summary
+                </div>
+                <div class="card-body" id="summary">
+                    <ul>
+                        <li>Avg Temperature: <span id="avgTemp">N/A</span></li>
+                        <li>Avg Smoke: <span id="avgSmoke">N/A</span></li>
+                        <li>Avg Humidity: <span id="avgHumidity">N/A</span></li>
+                        <li>Max Flame Detected: <span id="maxFlame">N/A</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Alerts History
+                    <button id="clearAlertsBtn" class="btn btn-sm btn-danger">Clear Alerts</button>
+                </div>
+            
+                
+                <div class="card-body" id="alertHistory">
+                    <ul id="alertHistoryList">
+                        <!-- Alerts history will be dynamically added here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensor Map -->
+    <div class="card">
+        <div class="card-header">
+            Sensor Map
+        </div>
+        <div class="card-body">
+            <div id="map" style="height: 400px;"></div>
+        </div>
+    </div>
+<script>
+// Object to store chart instances
+const charts = {
+    temp: null,
+    smoke: null,
+    flame: null,
+    humidity: null
+};
+
+// Object to store datasets for each node
+const nodeDatasets = {
+    temp: {},
+    smoke: {},
+    flame: {},
+    humidity: {}
+};
+
+// Colors for different nodes
+const nodeColors = [
+    { border: '#ff5733', background: 'rgba(255, 87, 51, 0.3)' },
+    { border: '#33ff57', background: 'rgba(51, 255, 87, 0.3)' },
+    { border: '#3399ff', background: 'rgba(51, 153, 255, 0.3)' },
+    { border: '#ff33b3', background: 'rgba(255, 51, 179, 0.3)' },
+    { border: '#ffc107', background: 'rgba(255, 193, 7, 0.3)' }
+];
+
+// Function to get a consistent color index for a node based on its ID
+function getColorIndex(nodeId) {
+    let hash = 0;
+    for (let i = 0; i < nodeId.toString().length; i++) {
+        hash = nodeId.toString().charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash) % nodeColors.length;
+}
+
+// Initialize charts with empty datasets
+function initializeCharts() {
+    const commonOptions = {
+        responsive: true,
+        scales: {
+            x: { type: 'category', title: { display: true, text: 'Time' } }
+        }
+    };
+
+    charts.temp = new Chart(document.getElementById('tempChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: { title: { display: true, text: 'Temperature (°C)' }, min: 0, max: 100 }
             }
-        });
+        }
+    });
 
-        const smokeChart = new Chart(document.getElementById('smokeChart'), {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Smoke Level (ppm)',
-                    data: [],
-                    borderColor: '#33ff57',
-                    backgroundColor: 'rgba(51, 255, 87, 0.3)',
-                    fill: true,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        type: 'category',
-                        title: {
-                            display: true,
-                            text: 'Time'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Smoke Level (ppm)'
-                        },
-                        min: 0,
-                        max: 10
-                    }
-                }
+    charts.smoke = new Chart(document.getElementById('smokeChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: { title: { display: true, text: 'Smoke Level (ppm)' }, min: 0, max: 10 }
             }
-        });
+        }
+    });
 
-        const flameChart = new Chart(document.getElementById('flameChart'), {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Flame Detected',
-                    data: [],
-                    borderColor: '#3399ff',
-                    backgroundColor: 'rgba(51, 153, 255, 0.3)',
-                    fill: true,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        type: 'category',
-                        title: {
-                            display: true,
-                            text: 'Time'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Flame Detection (0/1)'
-                        },
-                        min: 0,
-                        max: 1
-                    }
-                }
+    charts.flame = new Chart(document.getElementById('flameChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: { title: { display: true, text: 'Flame Detection (0/1)' }, min: 0, max: 1 }
             }
-        });
+        }
+    });
 
-        const humidityChart = new Chart(document.getElementById('humidityChart'), {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Humidity (%)',
-                    data: [],
-                    borderColor: '#ff33b3',
-                    backgroundColor: 'rgba(255, 51, 179, 0.3)',
-                    fill: true,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        type: 'category',
-                        title: {
-                            display: true,
-                            text: 'Time'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Humidity (%)'
-                        },
-                        min: 0,
-                        max: 100
-                    }
-                }
+    charts.humidity = new Chart(document.getElementById('humidityChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: { title: { display: true, text: 'Humidity (%)' }, min: 0, max: 100 }
             }
-        });
+        }
+    });
+}
 
-        let map = L.map('map').setView([27.7, 85.3], 8);  // Default to Nepal
+// Function to add or update a dataset for a node
+function addNodeDataset(nodeId) {
+    const colorIndex = getColorIndex(nodeId);
+    const color = nodeColors[colorIndex];
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+    const createDataset = (label, chart) => ({
+        label,
+        data: [],
+        borderColor: color.border,
+        backgroundColor: color.background,
+        fill: true,
+        tension: 0.1
+    });
 
-        let marker;
+    if (!nodeDatasets.temp[nodeId]) {
+        nodeDatasets.temp[nodeId] = createDataset(`Node ${nodeId} Temp (°C)`, charts.temp);
+        charts.temp.data.datasets.push(nodeDatasets.temp[nodeId]);
+    }
+    if (!nodeDatasets.smoke[nodeId]) {
+        nodeDatasets.smoke[nodeId] = createDataset(`Node ${nodeId} Smoke (ppm)`, charts.smoke);
+        charts.smoke.data.datasets.push(nodeDatasets.smoke[nodeId]);
+    }
+    if (!nodeDatasets.flame[nodeId]) {
+        nodeDatasets.flame[nodeId] = createDataset(`Node ${nodeId} Flame`, charts.flame);
+        charts.flame.data.datasets.push(nodeDatasets.flame[nodeId]);
+    }
+    if (!nodeDatasets.humidity[nodeId]) {
+        nodeDatasets.humidity[nodeId] = createDataset(`Node ${nodeId} Humidity (%)`, charts.humidity);
+        charts.humidity.data.datasets.push(nodeDatasets.humidity[nodeId]);
+    }
+}
 
-        // Periodic function to update data
-        let lastTimestamp = null;  // Store the last received timestamp
+// Initialize map using Leaflet and OpenStreetMap
+let map = L.map('map').setView([27.7, 85.3], 8);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
+// Store markers for nodes with detected flames
+const flameMarkers = {};
+
+// Store alert history locally
+let alertHistory = [];
+
+// Function to update alert history display
+function updateAlertHistory() {
+    const alertHistoryList = document.getElementById('alertHistoryList');
+    alertHistoryList.innerHTML = ''; // Clear existing alerts
+
+    // Limit to the most recent 5 alerts
+    const recentAlerts = alertHistory.slice(-5);
+
+    // Display alerts in reverse order (most recent first)
+    recentAlerts.reverse().forEach(alert => {
+        const alertItem = document.createElement('li');
+        const timestamp = new Date(alert.timestamp).toLocaleString();
+        alertItem.innerHTML = `<strong>${timestamp}</strong>: ${alert.message}`;
+        alertItem.className = 'alert-item';
+        alertHistoryList.appendChild(alertItem);
+    });
+
+    if (recentAlerts.length === 0) {
+        alertHistoryList.innerHTML = '<li>No alerts available.</li>';
+    }
+}
+
+// Function to clear alert history
+function clearAlertHistory() {
+    alertHistory = [];
+    updateAlertHistory();
+}
+
+// Function to calculate and update summary statistics
+function updateSummary(sensorData) {
+    if (!sensorData || sensorData.length === 0) {
+        document.getElementById('avgTemp').innerText = 'N/A';
+        document.getElementById('avgSmoke').innerText = 'N/A';
+        document.getElementById('avgHumidity').innerText = 'N/A';
+        document.getElementById('maxFlame').innerText = 'N/A';
+        return;
+    }
+
+    // Calculate averages and max flame across all nodes
+    const avgTemp = sensorData.reduce((sum, d) => sum + (d.temperature ?? 0), 0) / sensorData.length;
+    const avgSmoke = sensorData.reduce((sum, d) => sum + (d.smoke ?? 0), 0) / sensorData.length;
+    const avgHumidity = sensorData.reduce((sum, d) => sum + (d.humidity ?? 0), 0) / sensorData.length;
+    const maxFlame = Math.max(...sensorData.map(d => d.flame ? 1 : 0));
+
+    // Update the summary card
+    document.getElementById('avgTemp').innerText = `${avgTemp.toFixed(2)}°C`;
+    document.getElementById('avgSmoke').innerText = `${avgSmoke.toFixed(2)} ppm`;
+    document.getElementById('avgHumidity').innerText = `${avgHumidity.toFixed(2)}%`;
+    document.getElementById('maxFlame').innerText = maxFlame;
+}
+
+// Function to update charts, map, alerts, and summary with fetched data
+function updateChartsAndMapWithData(sensorData, timeLabel) {
+    sensorData.forEach(nodeData => {
+        const nodeId = nodeData.node;
+        if (nodeId === undefined) {
+            console.log("Missing node in data:", nodeData);
+            return;
+        }
+
+        addNodeDataset(nodeId);
+
+        nodeDatasets.temp[nodeId].data.push(nodeData.temperature ?? 0);
+        nodeDatasets.smoke[nodeId].data.push(nodeData.smoke ?? 0);
+        const flameValue = nodeData.flame ? 1 : 0;
+        nodeDatasets.flame[nodeId].data.push(flameValue);
+        nodeDatasets.humidity[nodeId].data.push(nodeData.humidity ?? 0);
+
+        if (flameValue === 1) {
+            const alertMessage = {
+                timestamp: new Date().toISOString(),
+                message: `Flame Detected at Node ${nodeId}`,
+                node: nodeId
+            };
+            alertHistory.push(alertMessage);
+            updateAlertHistory();
+
+            if (flameMarkers[nodeId]) {
+                map.removeLayer(flameMarkers[nodeId]);
+            }
+            flameMarkers[nodeId] = L.marker([nodeData.latitude, nodeData.longitude])
+                .addTo(map)
+                .bindPopup(`Node ${nodeId}: 🔥 Fire Detected`)
+                .openPopup();
+        } else {
+            if (flameMarkers[nodeId]) {
+                map.removeLayer(flameMarkers[nodeId]);
+                delete flameMarkers[nodeId];
+            }
+        }
+    });
+
+    let sharedLabels = charts.temp.data.labels;
+    if (sharedLabels.indexOf(timeLabel) === -1) {
+        sharedLabels.push(timeLabel);
+        charts.temp.data.labels = [...sharedLabels];
+        charts.smoke.data.labels = [...sharedLabels];
+        charts.flame.data.labels = [...sharedLabels];
+        charts.humidity.data.labels = [...sharedLabels];
+    }
+
+    if (sharedLabels.length > 7) {
+        sharedLabels.shift();
+        charts.temp.data.labels = [...sharedLabels];
+        charts.smoke.data.labels = [...sharedLabels];
+        charts.flame.data.labels = [...sharedLabels];
+        charts.humidity.data.labels = [...sharedLabels];
+
+        Object.values(nodeDatasets.temp).forEach(dataset => dataset.data.shift());
+        Object.values(nodeDatasets.smoke).forEach(dataset => dataset.data.shift());
+        Object.values(nodeDatasets.flame).forEach(dataset => dataset.data.shift());
+        Object.values(nodeDatasets.humidity).forEach(dataset => dataset.data.shift());
+    }
+
+    Object.values(charts).forEach(chart => chart.update());
+
+    if (Object.keys(flameMarkers).length > 0) {
+        const group = new L.featureGroup(Object.values(flameMarkers));
+        map.fitBounds(group.getBounds());
+    }
+
+    // Update the summary card with the latest sensor data
+    updateSummary(sensorData);
+}
+
+// Initialize charts on page load
+initializeCharts();
+
+// Periodic data fetch for sensor data
 setInterval(() => {
-    const token = "{{ user.token }}";
-    console.log(token)
+    const token = "{{ user.token }}"; // Replace with actual token if needed
     fetch(`http://127.0.0.1:8000/api/latest-sensor-data/?token=${token}`)
         .then(res => {
-            if (!res.ok) throw new Error("Network response was not ok");
+            if (!res.ok) throw new Error(`Network response was not ok: ${res.status}`);
             return res.json();
         })
         .then(data => {
-            // Only proceed if the timestamp has changed
-            if (data.timestamp !== lastTimestamp) {
-                lastTimestamp = data.timestamp;
+            const timeLabel = new Date().toLocaleTimeString();
 
-                const timeLabel = new Date().toLocaleTimeString();  // Label with current time
-
-                // Update chart data
-                tempChart.data.labels.push(timeLabel);
-                smokeChart.data.labels.push(timeLabel);
-                flameChart.data.labels.push(timeLabel);
-                humidityChart.data.labels.push(timeLabel);
-
-                tempChart.data.datasets[0].data.push(data.temperature);
-                smokeChart.data.datasets[0].data.push(data.smoke);
-                flameChart.data.datasets[0].data.push(data.flame);
-                humidityChart.data.datasets[0].data.push(data.humidity);
-
-                // Keep chart data to last 7 entries
-                const charts = [tempChart, smokeChart, flameChart, humidityChart];
-                charts.forEach(chart => {
-                    if (chart.data.labels.length > 7) {
-                        chart.data.labels.shift();
-                        chart.data.datasets[0].data.shift();
-                    }
-                    chart.update();
-                });
-
-                // Update value display
-                document.getElementById('tempValue').innerText = `${data.temperature} °C`;
-                document.getElementById('smokeValue').innerText = `${data.smoke} ppm`;
-                document.getElementById('flameValue').innerText = data.flame == 1 ? '🔥 Detected' : '✅ No Flame';
-                document.getElementById('humidityValue').innerText = `${data.humidity} %`;
-
-                // Flame alert + map marker
-                const alertBox = document.getElementById('alertBox');
-                if (data.flame) {
-                    if (marker) map.removeLayer(marker);
-                    marker = L.marker([data.latitude, data.longitude]).addTo(map)
-                        .bindPopup("🔥 Flame Detected Here!").openPopup();
-                    map.setView([data.latitude, data.longitude], 13);
-                    alertBox.innerHTML = `
-                        <div class="alert alert-danger" role="alert">
-                            <strong>🔥 Critical Alert!</strong> Flame detected at ${timeLabel}.
-                        </div>`;
-                } else {
-                    alertBox.innerHTML = '';
-                    if (marker) map.removeLayer(marker);
-                    marker = L.marker([27.700769, 85.300140]).addTo(map)
-                        .bindPopup("Safe Zone").openPopup();
-                    map.setView([27.700769, 85.300140], 13);
-                }
+            let sensorData;
+            if (Array.isArray(data)) {
+                sensorData = data;
+            } else if (data && Array.isArray(data.data)) {
+                sensorData = data.data;
+            } else if (data && typeof data === 'object') {
+                sensorData = [data];
             } else {
-                console.log("No new sensor data. Skipping update.");
+                throw new Error("Unexpected API response format");
             }
+
+            if (!sensorData.length) {
+                console.log("No sensor data received.");
+                updateSummary([]); // Reset summary if no data
+                return;
+            }
+
+            updateChartsAndMapWithData(sensorData, timeLabel);
         })
-        .catch(err => console.error('Error fetching sensor data:', err));
-}, 2000);  // Fetch every 2 seconds
-  // Update every 2 seconds
-    </script>
+        .catch(err => {
+            console.error('Error fetching sensor data:', err);
+            updateSummary([]); // Reset summary on error
+        });
+}, 2000);
+
+// Add event listener for clear button
+document.getElementById('clearAlertsBtn') && document.getElementById('clearAlertsBtn').addEventListener('click', clearAlertHistory);
+</script>
 </body>
 </html>
 {% endblock %}
