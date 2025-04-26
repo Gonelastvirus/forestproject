@@ -8,6 +8,8 @@ from .models import SensorData, CustomUser
 from .serializers import SensorDataSerializer
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max
+from datetime import datetime, timedelta
+import pytz
 
 # API view to receive sensor data
 class SensorDataView(APIView):
@@ -41,12 +43,16 @@ class LatestSensorDataView(APIView):
             return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not SensorData.objects.filter(user=user).exists():
-            raise NotFound("No sensor data available for this user.")
+            return Response([], status=status.HTTP_200_OK)  # Return empty array instead of raising NotFound
 
-        # Get the latest timestamp for each node
-        latest_timestamps = SensorData.objects.filter(user=user)\
-            .values('node')\
-            .annotate(latest_timestamp=Max('timestamp'))
+        # Define a time window for fresh data (e.g., last 5 seconds)
+        time_threshold = datetime.now(pytz.UTC) - timedelta(seconds=5)
+
+        # Get the latest timestamp for each node within the time window
+        latest_timestamps = SensorData.objects.filter(
+            user=user,
+            timestamp__gte=time_threshold
+        ).values('node').annotate(latest_timestamp=Max('timestamp'))
 
         # Get the full records for these latest timestamps
         latest_data = SensorData.objects.filter(
@@ -54,12 +60,11 @@ class LatestSensorDataView(APIView):
             timestamp__in=[item['latest_timestamp'] for item in latest_timestamps]
         )
 
-        if not latest_data:
-            raise NotFound("No sensor data available for this user.")
+        if not latest_data.exists():
+            return Response([], status=status.HTTP_200_OK)  # Return empty array for no fresh data
 
         serializer = SensorDataSerializer(latest_data, many=True)
-        return Response(serializer.data)
-
+        return Response(serializer.data, status=status.HTTP_200_OK)
 # Dashboard view for rendering the frontend
 @login_required
 def dashboard(request):
