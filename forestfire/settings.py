@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-7n9u1k2*4m4^_bjd1@%-4um8jq$)95psdbi&wf%#%a0f$uti@f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['forestproject-h9qe.onrender.com']
 
 LOGIN_REDIRECT_URL = 'dashboard'  # Redirect after successful login
 LOGOUT_REDIRECT_URL = 'login'  # Redirect after logout
