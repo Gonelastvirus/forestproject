@@ -29,4 +29,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('sensor_data.urls')),  # New: Separate API routes
     path('dashboard/', views.dashboard, name='dashboard'),  # Clean dashboard path
+    path('settings/', views.user_settings, name='user_settings'),
+   path('data-visualization/', views.sensor_data_visualization, name='sensor_data_visualization'),
 ]

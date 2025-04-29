@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sensor Data Visualization</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f6f9;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .table-container {
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background-color: #4299e1;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f7fafc;
+    }
+    .chart-container {
+      margin: 40px 0;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    canvas {
+      max-width: 100%;
+    }
+    .error-message {
+      color: #e53e3e;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .hidden-row {
+      display: none;
+    }
+    .show-more-btn {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      background-color: #4299e1;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .show-more-btn:hover {
+      background-color: #3182ce;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Sensor Data Visualization</h1>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Node</th>
+            <th>Temperature (°C)</th>
+            <th>Smoke (ppm)</th>
+            <th>Flame Detected</th>
+            <th>Humidity (%)</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for data in sensor_data %}
+            <tr {% if forloop.counter > 10 %}class="hidden-row"{% endif %}>
+              <td>{{ data.node }}</td>
+              <td>{{ data.temperature }}</td>
+              <td>{{ data.smoke }}</td>
+              <td>{{ data.flame|yesno:"Yes,No" }}</td>
+              <td>{{ data.humidity }}</td>
+              <td>{{ data.latitude }}</td>
+              <td>{{ data.longitude }}</td>
+              <td>{{ data.timestamp }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8">No sensor data available.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if sensor_data|length > 10 %}
+        <button class="show-more-btn" onclick="showMoreRows()">Show More</button>
+      {% endif %}
+    </div>
+
+    {% for node in nodes %}
+      <div class="chart-container">
+        <h2>Node {{ node }} - Metrics Over Time</h2>
+        <canvas id="chart-node-{{ node }}"></canvas>
+      </div>
+    {% endfor %}
+
+    <script>
+      // Show More functionality for the table
+      function showMoreRows() {
+        const hiddenRows = document.querySelectorAll('.hidden-row');
+        hiddenRows.forEach(row => {
+          row.style.display = 'table-row';
+        });
+        document.querySelector('.show-more-btn').style.display = 'none';
+      }
+
+      // Chart rendering
+      try {
+        const chartData = {{ chart_data|safe }};
+        console.log("Chart Data:", chartData);
+
+        {% for node in nodes %}
+          // Use an IIFE to create a new scope for each node
+          (function() {
+            const node = '{{ node }}';
+            console.log("Processing node:", node);
+
+            // Verify chartData[node] exists and has timestamps
+            if (!chartData[node] || !chartData[node].timestamps || chartData[node].timestamps.length === 0) {
+              console.warn("No data available for node:", node);
+              document.getElementById('chart-node-{{ node }}').insertAdjacentHTML('afterend', '<p class="error-message">No data to display for Node {{ node }}.</p>');
+            } else {
+              const ctx{{ node }} = document.getElementById('chart-node-{{ node }}').getContext('2d');
+              new Chart(ctx{{ node }}, {
+                type: 'line',
+                data: {
+                  labels: chartData[node].timestamps,
+                  datasets: [
+                    {
+                      label: 'Temperature (°C)',
+                      data: chartData[node].temperatures,
+                      borderColor: 'rgba(255, 99, 132, 1)',
+                      backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                      fill: false,
+                      tension: 0.1
+                    },
+                    {
+                      label: 'Smoke (ppm)',
+                      data: chartData[node].smoke,
+                      borderColor: 'rgba(54, 162, 235, 1)',
+                      backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                      fill: false,
+                      tension: 0.1
+                    },
+                    {
+                      label: 'Humidity (%)',
+                      data: chartData[node].humidity,
+                      borderColor: 'rgba(75, 192, 192, 1)',
+                      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                      fill: false,
+                      tension: 0.1
+                    },
+                    {
+                      label: 'Flame Detected',
+                      data: chartData[node].flame,
+                      borderColor: 'rgba(255, 206, 86, 1)',
+                      backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                      fill: false,
+                      tension: 0.1,
+                      stepped: true
+                    }
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  scales: {
+                    x: {
+                      title: {
+                        display: true,
+                        text: 'Timestamp'
+                      }
+                    },
+                    y: {
+                      title: {
+                        display: true,
+                        text: 'Value'
+                      },
+                      beginAtZero: true
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                    },
+                    title: {
+                      display: true,
+                      text: 'Node {{ node }} Sensor Data'
+                    }
+                  }
+                }
+              });
+            }
+          })();
+        {% endfor %}
+      } catch (error) {
+        console.error("Error rendering charts:", error);
+        document.querySelector('.container').insertAdjacentHTML('beforeend', '<p class="error-message">Error rendering charts: ' + error.message + '</p>');
+      }
+    </script>
+  </div>
+</body>
+</html>

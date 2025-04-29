@@ -24,4 +24,3 @@ class SensorData(models.Model):
     
 
 
-

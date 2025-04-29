@@ -455,11 +455,11 @@
                                 </div>
                             </div>
                             <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-user"></i> Prediction
+                            <a href="{% url 'sensor_data_visualization' %}" class="dropdown-item">
+                                <i class="fas fa-chart-line"></i> Data Visualization
                             </a>
-                            <a href="#" class="dropdown-item">
-                                <i class="fas fa-cog"></i> Reports
+                            <a href="{% url 'user_settings' %}" class="dropdown-item">
+                                <i class="fas fa-cog"></i> Settings
                             </a>
                             <div class="dropdown-divider"></div>
                             <a href="{% url 'logout' %}" class="dropdown-item">
