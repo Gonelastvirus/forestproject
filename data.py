@@ -3,7 +3,7 @@ import random
 import time
 
 token="4A:7B:9C:D2:E5:F8"
-URL = "https://forestproject-h9qe.onrender.com:10000/api/sensor-data/"  # Replace with your actual Django API URL
+URL = "http://127.0.0.1:8000/api/sensor-data/"  # Replace with your actual Django API URL
 # Simulated forest area near Chitwan National Park in Nepal
 LATITUDE = 27.5700   # Approximate latitude for Chitwan
 LONGITUDE = 84.5000  # Approximate longitude for Chitwan
